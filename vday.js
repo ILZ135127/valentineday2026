@@ -402,7 +402,11 @@ function showQuestionScreen() {
 
 function showGalleryScreen() {
     showScreen('gallery');
-    loadPhotos();
+    // Photos are linked in HTML; only load dynamically if gallery is empty
+    const gallery = document.getElementById('photoGallery');
+    if (!gallery.querySelector('img.gallery-photo')) {
+        loadPhotos();
+    }
     
     // Play music when gallery shows (with Edge/browser compatibility)
     const music = document.getElementById('galleryMusic');
@@ -602,3 +606,4 @@ document.getElementById('tryAgainButton').addEventListener('click', () => {
 init();
 updateProgressBar(); // Initialize progress bar
 gameLoop();
+
