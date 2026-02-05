@@ -23,7 +23,12 @@ const player = {
     y: 300,
     width: 32,
     height: 32,
-    speed: 3,
+    speed: 5,
+    maxSpeed: 5,
+    acceleration: 0.3,
+    friction: 0.85,
+    vx: 0,
+    vy: 0,
     color: '#D4A574' // eevee!
 };
 
@@ -217,15 +222,36 @@ function checkCollision(rect1, rect2) {
            rect1.y + rect1.height > rect2.y;
 }
 
-// Update player position
+// Update player position with smooth movement
 function updatePlayer() {
-    let newX = player.x;
-    let newY = player.y;
+    // Apply acceleration based on keys
+    if (keys['w'] || keys['W']) {
+        player.vy -= player.acceleration;
+    }
+    if (keys['s'] || keys['S']) {
+        player.vy += player.acceleration;
+    }
+    if (keys['a'] || keys['A']) {
+        player.vx -= player.acceleration;
+    }
+    if (keys['d'] || keys['D']) {
+        player.vx += player.acceleration;
+    }
     
-    if (keys['w'] || keys['W']) newY -= player.speed;
-    if (keys['s'] || keys['S']) newY += player.speed;
-    if (keys['a'] || keys['A']) newX -= player.speed;
-    if (keys['d'] || keys['D']) newX += player.speed;
+    // Apply friction
+    player.vx *= player.friction;
+    player.vy *= player.friction;
+    
+    // Limit max speed
+    const speed = Math.sqrt(player.vx * player.vx + player.vy * player.vy);
+    if (speed > player.maxSpeed) {
+        player.vx = (player.vx / speed) * player.maxSpeed;
+        player.vy = (player.vy / speed) * player.maxSpeed;
+    }
+    
+    // Calculate new position
+    let newX = player.x + player.vx;
+    let newY = player.y + player.vy;
     
     // Boundary check
     newX = Math.max(0, Math.min(gameCanvas.width - player.width, newX));
@@ -238,6 +264,9 @@ function updatePlayer() {
     for (const obstacle of obstacles) {
         if (checkCollision(newPlayerRect, obstacle)) {
             canMove = false;
+            // Stop velocity on collision
+            player.vx = 0;
+            player.vy = 0;
             break;
         }
     }
@@ -321,6 +350,7 @@ function drawParticles(ctx) {
     }
 }
 
+
 // Update progress bar
 function updateProgressBar() {
     const progress = (pokeballsCollected / pokeballs.length) * 100;
@@ -373,6 +403,23 @@ function showQuestionScreen() {
 function showGalleryScreen() {
     showScreen('gallery');
     loadPhotos();
+    
+    // Play music when gallery shows (with Edge/browser compatibility)
+    const music = document.getElementById('galleryMusic');
+    if (music) {
+        // Set volume and prepare for Edge
+        music.volume = 0.7;
+        music.muted = false;
+        
+        // Try to play - Edge requires user interaction first
+        const playPromise = music.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(e => {
+                console.log('Audio play failed (may need user interaction):', e);
+                // Show a message or button to enable audio if needed
+            });
+        }
+    }
 }
 
 function showSadScreen() {
@@ -399,58 +446,71 @@ function loadPhotos() {
     const gallery = document.getElementById('photoGallery');
     gallery.innerHTML = '<div class="photo-placeholder"><p>Loading photos...</p></div>';
     
-    // Try to load photos from photos folder (supports jpg, jpeg, png, gif)
-    const extensions = ['jpg', 'jpeg', 'png', 'gif'];
+    // List of actual photo filenames in the photos folder
+    const photoFiles = [
+        'Screenshot 2026-02-04 220107.png',
+        'Screenshot 2026-02-04 220440.png',
+        'Screenshot 2026-02-04 220452.png',
+        'Screenshot 2026-02-04 220500.png',
+        'Screenshot 2026-02-04 220507.png',
+        'Screenshot 2026-02-04 220513.png',
+        'Screenshot 2026-02-04 220518.png',
+        'Screenshot 2026-02-04 220524.png',
+        'Screenshot 2026-02-04 220531.png',
+        'Screenshot 2026-02-04 220537.png',
+        'Screenshot 2026-02-04 220543.png'
+    ];
+    
     const loadedPhotos = [];
     let checkedPhotos = 0;
-    const maxPhotos = 20;
     
-    function tryLoadPhoto(num, extIndex) {
-        if (extIndex >= extensions.length) {
-            checkedPhotos++;
-            if (checkedPhotos === maxPhotos) {
-                updateGallery();
-            }
-            return;
-        }
-        
+    function tryLoadPhoto(filename, index) {
         const img = document.createElement('img');
-        img.src = `photos/photo${num}.${extensions[extIndex]}`;
-        img.alt = `Photo ${num}`;
+        // Encode spaces and special characters in filename for URL
+        img.src = `photos/${encodeURIComponent(filename)}`;
+        img.alt = `Photo ${index + 1}`;
+        img.className = 'gallery-photo';
         
         img.onload = function() {
             loadedPhotos.push(img);
-            updateGallery();
+            checkedPhotos++;
+            if (checkedPhotos === photoFiles.length) {
+                updateGallery();
+            }
         };
         
         img.onerror = function() {
-            // Try next extension
-            tryLoadPhoto(num, extIndex + 1);
+            checkedPhotos++;
+            if (checkedPhotos === photoFiles.length) {
+                updateGallery();
+            }
         };
     }
     
     function updateGallery() {
         gallery.innerHTML = '';
-        if (loadedPhotos.length === 0 && checkedPhotos === maxPhotos) {
+        if (loadedPhotos.length === 0) {
             gallery.innerHTML = `
                 <div class="photo-placeholder">
-                    <p>💝 Add your photos here! 💝</p>
-                    <p class="photo-instructions">Place your images in a folder named "photos" and name them: photo1.jpg, photo2.jpg, photo3.png, etc.</p>
-                    <p class="photo-instructions">Supported formats: .jpg, .jpeg, .png, .gif</p>
+                    <p>💝 Photos couldn't be loaded 💝</p>
+                    <p class="photo-instructions">Make sure the photos are in the photos folder with the correct filenames.</p>
                 </div>
             `;
-        } else if (loadedPhotos.length > 0) {
-            loadedPhotos.forEach(img => gallery.appendChild(img));
+        } else {
+            loadedPhotos.forEach((img) => {
+                img.className = 'gallery-photo';
+                gallery.appendChild(img);
+            });
         }
     }
     
-    // Try to load up to 20 photos
-    for (let i = 1; i <= maxPhotos; i++) {
-        tryLoadPhoto(i, 0);
-    }
+    // Try to load all photos
+    photoFiles.forEach((filename, index) => {
+        tryLoadPhoto(filename, index);
+    });
     
     // Update gallery after a delay in case photos are still loading
-    setTimeout(updateGallery, 1000);
+    setTimeout(updateGallery, 2000);
 }
 
 // Game loop
@@ -514,14 +574,24 @@ document.getElementById('noButton').addEventListener('click', () => {
 });
 
 document.getElementById('backButton').addEventListener('click', () => {
+    // Stop music when leaving gallery
+    const music = document.getElementById('galleryMusic');
+    if (music) {
+        music.pause();
+        music.currentTime = 0;
+    }
+    
     showScreen('game');
     // Reset game
     pokeballsCollected = 0;
     player.x = 400;
     player.y = 300;
+    player.vx = 0;
+    player.vy = 0;
     pokeballs.forEach(p => p.collected = false);
     document.getElementById('message').textContent = '';
     document.getElementById('pokeballsCount').textContent = '0';
+    updateProgressBar();
 });
 
 document.getElementById('tryAgainButton').addEventListener('click', () => {
