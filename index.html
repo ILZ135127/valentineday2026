@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Hai Phoebe...mwwauhuah  </title>
+    <title>Hai phoebe...</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
@@ -13,8 +13,8 @@
     
     <div id="gameScreen" class="screen active">
         <div class="container">
-            <div class="title"> Hai Phoebe...mwwauhuah</div>
-            <div class="instructions">Use wasd to move around and collect pokeballs for a suprise!!</div>
+            <div class="title"> Hai phoebe.....</div>
+            <div class="instructions">Use wasd to move around and collect pokeballs!!</div>
             <canvas id="gameCanvas"></canvas>
             <div class="stats">
                 <div>Pokéballs Collected: <span id="pokeballsCount">0</span> / <span id="totalPokeballs">15</span></div>
@@ -42,7 +42,7 @@
     
     <div id="galleryScreen" class="screen">
         <div class="container gallery-container">
-            <div class="gallery-title">💝 Our Memories Together 💝</div>
+            <div class="gallery-title">YAY SHE SAID YES GF!</div>
             <div id="photoGallery" class="photo-gallery">
                 <!-- Photos will be added here  -->
                 <div class="photo-placeholder">
@@ -61,11 +61,19 @@
             <div class="eevee-container">
                 <canvas id="sadCanvas"></canvas>
             </div>
-            <div class="sad-message">Maybe next time? </div>
+            <div class="sad-message"> eevees heart aches... </div>
             <button id="tryAgainButton" class="valentine-button">Try Again?</button>
         </div>
     </div>
 
+    <!-- Audio element for gallery music -->
+    <audio id="galleryMusic" loop preload="auto" crossorigin="anonymous">
+        <source src="music.mp3" type="audio/mpeg">
+        <source src="music.ogg" type="audio/ogg">
+        Your browser does not support the audio element.
+    </audio>
+
     <script src="vday.js"></script>
 </body>
 </html>
+
